@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import MiniTopbar from "@/components/MiniTopbar";
 import DemoBanner from "@/components/DemoBanner";
-import { precios } from "@/site.config";
+import { precios, cuentaBancaria as BANCO } from "@/site.config";
 import { mxn } from "@/lib/pricing";
 
 // Datos de ejemplo (se reemplazan por los reales al conectar la base de datos)
@@ -13,13 +13,6 @@ const DEMO = {
   folio: "AU-0001",
   total: 3000,
   etapaId: "preventa",
-};
-
-// Datos bancarios de la Gran Logia (por definir — se cargan cuando Rob los pase)
-const BANCO = {
-  banco: "Por definir",
-  titular: "Gran Logia de Baja California",
-  clabe: "Por definir",
 };
 
 export default function Panel() {
@@ -91,6 +84,8 @@ export default function Panel() {
               <dl className="space-y-3 text-sm">
                 <Dato k="Banco" v={BANCO.banco} />
                 <Dato k="Titular" v={BANCO.titular} />
+                <Dato k="Cuenta" v={BANCO.cuenta} mono />
+                <Dato k="Sucursal" v={BANCO.sucursal} mono />
                 <Dato k="CLABE" v={BANCO.clabe} mono />
                 <div className="rounded-xl bg-gold/10 border border-gold/30 p-3">
                   <p className="text-xs text-[#555]">Concepto / referencia (¡importante!)</p>

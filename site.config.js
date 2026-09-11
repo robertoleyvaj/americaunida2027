@@ -15,6 +15,15 @@ export const site = {
   email: "americaunida2027@gmail.com",
 };
 
+// Cuenta bancaria de la Gran Logia (para las transferencias de inscripción)
+export const cuentaBancaria = {
+  banco: "Banamex",
+  titular: "Gran Logia del Estado de Baja California",
+  cuenta: "4233439",
+  sucursal: "7010",
+  clabe: "002020701042334396",
+};
+
 // ---------- PRECIOS E INSCRIPCIÓN (Fase 3) ----------
 // Etapas de precio "early bird". Las fechas están en horario de Tijuana.
 export const precios = {

@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-[#222222] font-body antialiased;
+}
+
+/* Etiqueta/kicker de sección */
+.kicker {
+  @apply inline-block text-xs md:text-sm font-heading font-semibold tracking-[0.22em] uppercase;
+}
+
+/* Líneas de color de América Unida (jurisdicciones que se unen) */
+.au-lines > span {
+  display: block;
+  height: 3px;
+  transform-origin: left center;
+}
+
+/* Respeta usuarios con "reducir movimiento" */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

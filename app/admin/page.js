@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import MiniTopbar from "@/components/MiniTopbar";
 import { mxn } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
+import { notificar } from "@/lib/notify";
+import { precios } from "@/site.config";
 
 export default function Admin() {
   const router = useRouter();
@@ -21,7 +23,7 @@ export default function Admin() {
     const ids = [...new Set(lista.map((p) => p.user_id))];
     let inscMap = {};
     if (ids.length) {
-      const { data: inscs } = await supabase.from("inscripciones").select("id,nombre,folio,gran_logia,email").in("id", ids);
+      const { data: inscs } = await supabase.from("inscripciones").select("id,nombre,folio,gran_logia,email,total,valle").in("id", ids);
       (inscs || []).forEach((i) => { inscMap[i.id] = i; });
     }
     // Enlaces firmados a los comprobantes
@@ -47,9 +49,16 @@ export default function Admin() {
     })();
   }, [router]);
 
-  const decidir = async (id, nuevo) => {
-    setBusy(id);
-    await supabase.from("pagos").update({ estado: nuevo }).eq("id", id);
+  const decidir = async (p, nuevo) => {
+    setBusy(p.id);
+    await supabase.from("pagos").update({ estado: nuevo }).eq("id", p.id);
+    if (nuevo === "confirmado") {
+      const { data: confirmados } = await supabase.from("pagos").select("monto").eq("user_id", p.user_id).eq("estado", "confirmado");
+      const pagado = (confirmados || []).reduce((a, r) => a + r.monto, 0);
+      const totalUser = (p.insc.total || 0) + (p.insc.valle ? precios.valleGuadalupe : 0);
+      const restante = Math.max(0, totalUser - pagado);
+      if (p.insc.email) notificar({ tipo: "pago_acreditado", nombre: p.insc.nombre, email: p.insc.email, monto: p.monto, restante });
+    }
     await cargar();
     setBusy("");
   };
@@ -112,11 +121,11 @@ export default function Admin() {
                 )}
               </div>
               <div className="flex gap-2">
-                <button disabled={busy === p.id} onClick={() => decidir(p.id, "confirmado")}
+                <button disabled={busy === p.id} onClick={() => decidir(p, "confirmado")}
                         className="rounded-full bg-au-verde px-5 py-2.5 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50">
                   Confirmar
                 </button>
-                <button disabled={busy === p.id} onClick={() => decidir(p.id, "rechazado")}
+                <button disabled={busy === p.id} onClick={() => decidir(p, "rechazado")}
                         className="rounded-full border border-au-rojo text-au-rojo px-5 py-2.5 text-sm font-semibold hover:bg-au-rojo/10 disabled:opacity-50">
                   Rechazar
                 </button>

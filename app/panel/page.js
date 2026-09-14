@@ -7,6 +7,7 @@ import MiniTopbar from "@/components/MiniTopbar";
 import { precios, cuentaBancaria as BANCO } from "@/site.config";
 import { mxn } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
+import { notificar } from "@/lib/notify";
 
 const ESTADOS = {
   en_revision: { txt: "En revisión", cls: "bg-au-amarillo/20 text-[#8a6d18]" },
@@ -62,6 +63,13 @@ export default function Panel() {
       user_id: uid, monto: m, fecha: fecha || null, comprobante_url: path, estado: "en_revision",
     });
     if (insErr) { setMsg("No se pudo registrar el pago: " + insErr.message); setEnviando(false); return; }
+    // Aviso por correo (al congresista + tesorero/contadora, con enlace al comprobante)
+    let comprobanteUrl = null;
+    try {
+      const { data: signed } = await supabase.storage.from("comprobantes").createSignedUrl(path, 60 * 60 * 24 * 7);
+      comprobanteUrl = signed?.signedUrl || null;
+    } catch (_) {}
+    notificar({ tipo: "pago_recibido", nombre: insc.nombre, email: insc.email, folio: insc.folio, monto: m, fecha: fecha || "", comprobanteUrl });
     setMonto(""); setFecha(""); setFile(null);
     setMsg("¡Comprobante enviado! Queda en revisión.");
     await cargarPagos(uid);

@@ -8,6 +8,7 @@ import DemoBanner from "@/components/DemoBanner";
 import { precios } from "@/site.config";
 import { mxn, etapaVigente } from "@/lib/pricing";
 import { supabase } from "@/lib/supabase";
+import { notificar } from "@/lib/notify";
 
 function traducirError(msg = "") {
   const m = msg.toLowerCase();
@@ -51,7 +52,7 @@ export default function Inscripciones() {
       return;
     }
     // 2) Guardar los datos de la inscripción
-    const { error: insErr } = await supabase.from("inscripciones").insert({
+    const { data: inscRow, error: insErr } = await supabase.from("inscripciones").insert({
       id: user.id,
       nombre: form.nombre,
       grado: form.grado,
@@ -62,8 +63,10 @@ export default function Inscripciones() {
       etapa: etapa.id,
       total: etapa.precio,
       valle,
-    });
+    }).select("folio").single();
     if (insErr) { setError("Cuenta creada, pero no se guardaron los datos: " + insErr.message); setLoading(false); return; }
+    // 3) Correo de bienvenida (no bloquea)
+    notificar({ tipo: "bienvenida", nombre: form.nombre, email: form.email.trim(), folio: inscRow?.folio });
     router.push("/panel");
   };
 

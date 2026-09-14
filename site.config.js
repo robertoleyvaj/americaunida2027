@@ -24,6 +24,14 @@ export const cuentaBancaria = {
   clabe: "002020701042334396",
 };
 
+// Correos que reciben avisos (comprobantes) — edítalos aquí cuando cambien
+export const notificaciones = {
+  // Remitente (dominio verificado en Resend)
+  from: "América Unida Baja California 2027 <avisos@americaunidabc.com>",
+  tesorero: "profegiamby@gmail.com",
+  contadora: "karla.belem84@hotmail.com",
+};
+
 // ---------- PRECIOS E INSCRIPCIÓN (Fase 3) ----------
 // Etapas de precio "early bird". Las fechas están en horario de Tijuana.
 export const precios = {

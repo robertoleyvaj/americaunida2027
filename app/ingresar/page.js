@@ -5,14 +5,25 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MiniTopbar from "@/components/MiniTopbar";
 import DemoBanner from "@/components/DemoBanner";
+import { supabase } from "@/lib/supabase";
 
 export default function Ingresar() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
+    if (error) {
+      setError("Correo o contraseña incorrectos.");
+      setLoading(false);
+      return;
+    }
     router.push("/panel");
   };
 
@@ -36,9 +47,12 @@ export default function Ingresar() {
               <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} required
                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gold focus:outline-none" />
             </label>
-            <button type="submit"
-                    className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors mt-2">
-              Entrar
+
+            {error && <p className="text-sm text-au-rojo bg-au-rojo/10 border border-au-rojo/30 rounded-lg px-3 py-2">{error}</p>}
+
+            <button type="submit" disabled={loading}
+                    className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors mt-2 disabled:opacity-60">
+              {loading ? "Entrando…" : "Entrar"}
             </button>
           </form>
           <p className="text-xs text-[#999] text-center mt-4">

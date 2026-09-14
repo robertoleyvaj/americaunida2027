@@ -1,58 +1,121 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MiniTopbar from "@/components/MiniTopbar";
-import DemoBanner from "@/components/DemoBanner";
 import { precios, cuentaBancaria as BANCO } from "@/site.config";
 import { mxn } from "@/lib/pricing";
+import { supabase } from "@/lib/supabase";
 
-// Datos de ejemplo (se reemplazan por los reales al conectar la base de datos)
-const DEMO = {
-  nombre: "Juan",
-  folio: "AU-0001",
-  total: 3000,
-  etapaId: "preventa",
+const ESTADOS = {
+  en_revision: { txt: "En revisión", cls: "bg-au-amarillo/20 text-[#8a6d18]" },
+  confirmado: { txt: "Confirmado", cls: "bg-au-verde/15 text-[#1f7a52]" },
+  rechazado: { txt: "Rechazado", cls: "bg-au-rojo/15 text-[#a12a2a]" },
 };
 
 export default function Panel() {
-  const [pagos, setPagos] = useState([
-    { fecha: "18 dic 2026", monto: 1000, estado: "Confirmado", ref: "Transferencia" },
-    { fecha: "05 dic 2026", monto: 500, estado: "Confirmado", ref: "Transferencia" },
-  ]);
+  const router = useRouter();
+  const [uid, setUid] = useState(null);
+  const [insc, setInsc] = useState(null);
+  const [pagos, setPagos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState("");
-  const [archivo, setArchivo] = useState("");
+  const [file, setFile] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [msg, setMsg] = useState("");
 
-  const pagado = pagos.filter((p) => p.estado === "Confirmado").reduce((a, p) => a + p.monto, 0);
-  const enRevision = pagos.filter((p) => p.estado === "En revisión").reduce((a, p) => a + p.monto, 0);
-  const restante = Math.max(0, DEMO.total - pagado);
-  const pct = Math.round((pagado / DEMO.total) * 100);
+  async function cargarPagos(id) {
+    const { data } = await supabase.from("pagos").select("*").eq("user_id", id).order("created_at", { ascending: false });
+    setPagos(data || []);
+  }
 
-  const enviar = (e) => {
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.replace("/ingresar"); return; }
+      const id = session.user.id;
+      setUid(id);
+      const { data: ins } = await supabase.from("inscripciones").select("*").eq("id", id).single();
+      setInsc(ins || null);
+      await cargarPagos(id);
+      setLoading(false);
+    })();
+  }, [router]);
+
+  const logout = async () => { await supabase.auth.signOut(); router.push("/"); };
+
+  const enviar = async (e) => {
     e.preventDefault();
+    setMsg("");
     const m = parseInt(String(monto).replace(/[^0-9]/g, ""), 10);
-    if (!m) return;
-    setPagos([{ fecha: fecha || "hoy", monto: m, estado: "En revisión", ref: archivo || "Comprobante" }, ...pagos]);
-    setMonto(""); setFecha(""); setArchivo("");
+    if (!m) { setMsg("Escribe el monto que pagaste."); return; }
+    if (!file) { setMsg("Adjunta tu comprobante (foto o PDF)."); return; }
+    setEnviando(true);
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${uid}/${Date.now()}-${safe}`;
+    const { error: upErr } = await supabase.storage.from("comprobantes").upload(path, file);
+    if (upErr) { setMsg("No se pudo subir el comprobante: " + upErr.message); setEnviando(false); return; }
+    const { error: insErr } = await supabase.from("pagos").insert({
+      user_id: uid, monto: m, fecha: fecha || null, comprobante_url: path, estado: "en_revision",
+    });
+    if (insErr) { setMsg("No se pudo registrar el pago: " + insErr.message); setEnviando(false); return; }
+    setMonto(""); setFecha(""); setFile(null);
+    setMsg("¡Comprobante enviado! Queda en revisión.");
+    await cargarPagos(uid);
+    setEnviando(false);
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-cloud">
+        <MiniTopbar right={<span />} />
+        <div className="mx-auto max-w-4xl px-5 py-20 text-center text-[#666]">Cargando tu panel…</div>
+      </main>
+    );
+  }
+
+  if (!insc) {
+    return (
+      <main className="min-h-screen bg-cloud">
+        <MiniTopbar right={<button onClick={logout} className="hover:text-white">Cerrar sesión</button>} />
+        <div className="mx-auto max-w-md px-5 py-20 text-center">
+          <p className="text-navy font-heading font-bold text-lg">No encontramos tu inscripción</p>
+          <p className="text-[#666] text-sm mt-2">Tu cuenta existe pero no tiene datos de inscripción. Escríbenos y lo resolvemos.</p>
+          <Link href="/inscripciones" className="inline-block mt-5 rounded-full bg-gold px-6 py-2.5 text-navy font-semibold">Ir a inscripción</Link>
+        </div>
+      </main>
+    );
+  }
+
+  const etapaObj = precios.etapas.find((e) => e.id === insc.etapa) || precios.etapas[0];
+  const total = (insc.total || 0) + (insc.valle ? precios.valleGuadalupe : 0);
+  const pagado = pagos.filter((p) => p.estado === "confirmado").reduce((a, p) => a + p.monto, 0);
+  const enRevision = pagos.filter((p) => p.estado === "en_revision").reduce((a, p) => a + p.monto, 0);
+  const restante = Math.max(0, total - pagado);
+  const pct = total ? Math.round((pagado / total) * 100) : 0;
+  const preventaOK = insc.etapa === "preventa" && pagado >= (insc.total || 0) / 2;
+  const nombreCorto = (insc.nombre || "").split(" ")[0] || "hermano";
 
   return (
     <main className="min-h-screen bg-cloud">
-      <DemoBanner />
-      <MiniTopbar right={<Link href="/" className="hover:text-white">Cerrar sesión</Link>} />
+      <MiniTopbar right={<button onClick={logout} className="hover:text-white">Cerrar sesión</button>} />
 
       <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
         <p className="kicker text-gold-dark">Mi inscripción</p>
-        <h1 className="mt-1 font-heading text-navy text-2xl md:text-3xl font-bold">Hola, {DEMO.nombre} 👋</h1>
+        <h1 className="mt-1 font-heading text-navy text-2xl md:text-3xl font-bold">Hola, {nombreCorto} 👋</h1>
         <p className="text-[#666] text-sm mt-1">Aquí ves tu saldo, pagas por transferencia y subes tus comprobantes.</p>
 
         <div className="mt-6 space-y-5">
           {/* Saldo */}
           <div className="rounded-2xl p-6 text-white bg-gradient-to-br from-navy to-navy-800">
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="inline-block bg-gold text-navy text-[11px] font-bold px-3 py-1 rounded-full">🏷️ Preventa asegurada</span>
-              <span className="inline-block bg-white/10 text-white text-[11px] font-semibold px-3 py-1 rounded-full">Folio {DEMO.folio}</span>
+              {preventaOK
+                ? <span className="inline-block bg-gold text-navy text-[11px] font-bold px-3 py-1 rounded-full">🏷️ Preventa asegurada</span>
+                : <span className="inline-block bg-white/10 text-white text-[11px] font-semibold px-3 py-1 rounded-full">Etapa: {etapaObj.nombre}</span>}
+              <span className="inline-block bg-white/10 text-white text-[11px] font-semibold px-3 py-1 rounded-full">Folio {insc.folio || "—"}</span>
             </div>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -63,7 +126,7 @@ export default function Panel() {
                 <p className="text-xs uppercase tracking-widest text-white/60">Pagado</p>
                 <p className="font-heading text-lg font-bold">{mxn(pagado)}</p>
                 <p className="text-xs uppercase tracking-widest text-white/60 mt-2">Total</p>
-                <p className="font-heading text-lg font-bold">{mxn(DEMO.total)} MXN</p>
+                <p className="font-heading text-lg font-bold">{mxn(total)} MXN</p>
               </div>
             </div>
             <div className="h-3 rounded-full bg-white/15 mt-4 overflow-hidden">
@@ -89,21 +152,21 @@ export default function Panel() {
                 <Dato k="CLABE" v={BANCO.clabe} mono />
                 <div className="rounded-xl bg-gold/10 border border-gold/30 p-3">
                   <p className="text-xs text-[#555]">Concepto / referencia (¡importante!)</p>
-                  <p className="font-heading font-extrabold text-navy text-lg mt-0.5">{DEMO.folio}</p>
+                  <p className="font-heading font-extrabold text-navy text-lg mt-0.5">{insc.folio || "—"}</p>
                   <p className="text-[11px] text-[#777] mt-1">Pon tu folio en el concepto para que identifiquemos tu pago.</p>
                 </div>
               </dl>
               <p className="mt-4 text-xs text-[#999]">Puedes pagar todo de una vez o en abonos: cada transferencia se registra por separado.</p>
             </div>
 
-            {/* Registrar pago / subir comprobante */}
+            {/* Registrar pago */}
             <div className="rounded-2xl bg-white border border-gray-100 p-6">
               <h2 className="font-heading text-navy text-lg font-bold">Registrar un pago</h2>
               <p className="text-sm text-[#666] mt-0.5 mb-4">Ya que transferiste, sube tu comprobante.</p>
               <form onSubmit={enviar} className="space-y-3">
                 <label className="block">
                   <span className="text-xs font-medium text-[#555]">Monto pagado</span>
-                  <input value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$500" required
+                  <input value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$500"
                          className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gold focus:outline-none" />
                 </label>
                 <label className="block">
@@ -114,12 +177,13 @@ export default function Panel() {
                 <label className="block">
                   <span className="text-xs font-medium text-[#555]">Comprobante (foto o PDF)</span>
                   <input type="file" accept="image/*,application/pdf"
-                         onChange={(e) => setArchivo(e.target.files?.[0]?.name || "")}
+                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                          className="mt-1 w-full text-xs text-[#555] file:mr-3 file:rounded-full file:border-0 file:bg-navy file:text-white file:px-4 file:py-2 file:text-xs file:font-semibold" />
                 </label>
-                <button type="submit"
-                        className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors">
-                  Enviar comprobante
+                {msg && <p className="text-xs text-navy bg-cloud rounded-lg px-3 py-2">{msg}</p>}
+                <button type="submit" disabled={enviando}
+                        className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors disabled:opacity-60">
+                  {enviando ? "Enviando…" : "Enviar comprobante"}
                 </button>
                 <p className="text-[11px] text-[#999] text-center">Queda "en revisión" hasta que la organización lo confirme.</p>
               </form>
@@ -129,49 +193,33 @@ export default function Panel() {
           {/* Mis pagos */}
           <div className="rounded-2xl bg-white border border-gray-100 p-6">
             <h2 className="font-heading text-navy text-lg font-bold mb-3">Mis pagos</h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[#888] text-xs uppercase tracking-wide">
-                  <th className="text-left font-semibold py-2">Fecha</th>
-                  <th className="text-left font-semibold py-2">Comprobante</th>
-                  <th className="text-center font-semibold py-2">Estado</th>
-                  <th className="text-right font-semibold py-2">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagos.map((p, i) => (
-                  <tr key={i} className="border-t border-gray-100">
-                    <td className="py-2.5">{p.fecha}</td>
-                    <td className="py-2.5 text-[#555]">{p.ref}</td>
-                    <td className="py-2.5 text-center">
-                      <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-                        p.estado === "Confirmado" ? "bg-au-verde/15 text-[#1f7a52]" : "bg-au-amarillo/20 text-[#8a6d18]"
-                      }`}>{p.estado}</span>
-                    </td>
-                    <td className="py-2.5 text-right font-heading font-semibold text-navy">{mxn(p.monto)}</td>
+            {pagos.length === 0 ? (
+              <p className="text-sm text-[#888]">Aún no has registrado pagos. Cuando transfieras, sube tu comprobante arriba.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[#888] text-xs uppercase tracking-wide">
+                    <th className="text-left font-semibold py-2">Fecha</th>
+                    <th className="text-center font-semibold py-2">Estado</th>
+                    <th className="text-right font-semibold py-2">Monto</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Etapas */}
-          <div className="rounded-2xl bg-white border border-gray-100 p-6">
-            <h2 className="font-heading text-navy text-lg font-bold">Etapas de precio</h2>
-            <p className="text-sm text-[#666] mt-0.5 mb-4">Entre más pronto pagas, menos cuesta.</p>
-            <div className="grid gap-3 md:grid-cols-3">
-              {precios.etapas.map((et) => (
-                <div key={et.id}
-                     className={`relative rounded-xl border p-4 ${et.id === DEMO.etapaId ? "border-gold ring-2 ring-gold/25" : "border-gray-200"}`}>
-                  {et.id === DEMO.etapaId && (
-                    <span className="absolute -top-2 right-3 bg-gold text-navy text-[10px] font-bold px-2 py-0.5 rounded-full">TU ETAPA</span>
-                  )}
-                  <p className="font-heading font-bold text-navy text-sm">{et.nombre}</p>
-                  <p className="font-heading font-extrabold text-navy text-xl my-1">{mxn(et.precio)}</p>
-                  <p className="text-xs text-[#777]">{et.condicion}</p>
-                </div>
-              ))}
-            </div>
+                </thead>
+                <tbody>
+                  {pagos.map((p) => {
+                    const est = ESTADOS[p.estado] || ESTADOS.en_revision;
+                    return (
+                      <tr key={p.id} className="border-t border-gray-100">
+                        <td className="py-2.5">{p.fecha || new Date(p.created_at).toLocaleDateString("es-MX")}</td>
+                        <td className="py-2.5 text-center">
+                          <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full ${est.cls}`}>{est.txt}</span>
+                        </td>
+                        <td className="py-2.5 text-right font-heading font-semibold text-navy">{mxn(p.monto)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

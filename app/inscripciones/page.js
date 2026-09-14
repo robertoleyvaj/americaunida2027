@@ -7,6 +7,15 @@ import MiniTopbar from "@/components/MiniTopbar";
 import DemoBanner from "@/components/DemoBanner";
 import { precios } from "@/site.config";
 import { mxn, etapaVigente } from "@/lib/pricing";
+import { supabase } from "@/lib/supabase";
+
+function traducirError(msg = "") {
+  const m = msg.toLowerCase();
+  if (m.includes("already registered") || m.includes("already been registered")) return "Ese correo ya tiene una cuenta. Inicia sesión.";
+  if (m.includes("password") && m.includes("6")) return "La contraseña debe tener al menos 6 caracteres.";
+  if (m.includes("valid email") || m.includes("invalid email")) return "El correo no es válido.";
+  return "No se pudo crear la cuenta: " + msg;
+}
 
 export default function Inscripciones() {
   const router = useRouter();
@@ -20,7 +29,43 @@ export default function Inscripciones() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const total = etapa.precio + (valle ? precios.valleGuadalupe : 0);
 
-  const onSubmit = (e) => { e.preventDefault(); router.push("/panel"); };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    // 1) Crear el acceso (correo + contraseña)
+    const { data, error: signErr } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.pass,
+    });
+    if (signErr) { setError(traducirError(signErr.message)); setLoading(false); return; }
+    const user = data.user;
+    if (!user) { setError("No se pudo crear la cuenta. Intenta de nuevo."); setLoading(false); return; }
+    if (!data.session) {
+      // Confirmación de correo activada: no hay sesión para guardar los datos.
+      setError("Tu cuenta se creó, pero falta confirmar tu correo. Revisa tu bandeja y luego inicia sesión.");
+      setLoading(false);
+      return;
+    }
+    // 2) Guardar los datos de la inscripción
+    const { error: insErr } = await supabase.from("inscripciones").insert({
+      id: user.id,
+      nombre: form.nombre,
+      grado: form.grado,
+      logia_simbolica: form.logiaSimbolica,
+      gran_logia: form.granLogia,
+      telefono: form.telefono,
+      email: form.email.trim(),
+      etapa: etapa.id,
+      total: etapa.precio,
+      valle,
+    });
+    if (insErr) { setError("Cuenta creada, pero no se guardaron los datos: " + insErr.message); setLoading(false); return; }
+    router.push("/panel");
+  };
 
   return (
     <main className="min-h-screen bg-cloud">
@@ -58,7 +103,7 @@ export default function Inscripciones() {
             </div>
           </div>
 
-          {/* Escalera de precios: cómo sube con el tiempo */}
+          {/* Escalera de precios */}
           <div className="mt-5">
             <p className="text-xs font-semibold text-[#888] uppercase tracking-wide mb-2">El precio sube conforme pasan las fechas</p>
             <div className="space-y-2">
@@ -73,20 +118,14 @@ export default function Inscripciones() {
                          : past ? "border-gray-200 bg-white/40 opacity-60" : "border-gray-200 bg-white/70"
                        }`}>
                     <div className="flex items-center gap-3">
-                      <span className={`text-lg ${current ? "text-gold-dark" : "text-gray-300"}`}>
-                        {current ? "●" : past ? "✓" : "○"}
-                      </span>
+                      <span className={`text-lg ${current ? "text-gold-dark" : "text-gray-300"}`}>{current ? "●" : past ? "✓" : "○"}</span>
                       <div>
-                        <p className="font-heading font-bold text-navy text-sm">
-                          {et.nombre} {current && <span className="text-gold-dark">· hoy</span>}
-                        </p>
+                        <p className="font-heading font-bold text-navy text-sm">{et.nombre} {current && <span className="text-gold-dark">· hoy</span>}</p>
                         <p className="text-xs text-[#777]">{et.condicion}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      {save > 0 && (
-                        <p className={`text-[11px] font-semibold ${current ? "text-au-verde" : "text-[#999]"}`}>ahorras {mxn(save)}</p>
-                      )}
+                      {save > 0 && <p className={`text-[11px] font-semibold ${current ? "text-au-verde" : "text-[#999]"}`}>ahorras {mxn(save)}</p>}
                       <p className="font-heading font-extrabold text-navy">{mxn(et.precio)}</p>
                     </div>
                   </div>
@@ -174,9 +213,13 @@ export default function Inscripciones() {
               <Field label="Logia simbólica" value={form.logiaSimbolica} onChange={set("logiaSimbolica")} required />
               <Field label="Gran Logia" value={form.granLogia} onChange={set("granLogia")} required />
               <Field label="Correo electrónico" type="email" value={form.email} onChange={set("email")} required />
-              <Field label="Contraseña" type="password" value={form.pass} onChange={set("pass")} required />
-              <button type="submit" className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors mt-2">
-                Crear cuenta y continuar
+              <Field label="Contraseña (mínimo 6 caracteres)" type="password" value={form.pass} onChange={set("pass")} required />
+
+              {error && <p className="text-sm text-au-rojo bg-au-rojo/10 border border-au-rojo/30 rounded-lg px-3 py-2">{error}</p>}
+
+              <button type="submit" disabled={loading}
+                      className="w-full rounded-full bg-gold px-6 py-3 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors mt-2 disabled:opacity-60">
+                {loading ? "Creando cuenta…" : "Crear cuenta y continuar"}
               </button>
               <p className="text-xs text-[#999] text-center">
                 ¿Ya tienes cuenta? <Link href="/ingresar" className="text-au-azul underline">Inicia sesión</Link>

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { site } from "@/site.config";
 
 const conferencias = [
-  "1 · AJEFismo y relevo generacional",
-  "2 · De la Logia a la institución",
-  "3 · Regularidad y reconocimiento masónico",
-  "General / todas",
+  "Conferencia 1",
+  "Conferencia 2",
+  "Conferencia 3",
+  "General / cualquier tema",
 ];
 
 export default function PreguntaForm() {

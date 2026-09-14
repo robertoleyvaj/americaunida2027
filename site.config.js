@@ -12,7 +12,7 @@ export const site = {
   claim: "De toda América venimos. En Baja California nos encontramos.",
 
   // Correo del evento
-  email: "americaunida2027@gmail.com",
+  email: "au2027@masonesdebajacalifornia.com",
 };
 
 // Cuenta bancaria de la Gran Logia (para las transferencias de inscripción)

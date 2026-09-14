@@ -66,9 +66,9 @@ const dias = [
       "Después de la Tenida Blanca: noche libre.",
     ],
     conferencias: [
-      "Del AJEFismo al relevo generacional: formación, continuidad y futuro de la Masonería.",
-      "De la Logia a la institución: gobernanza, certeza jurídica y sostenibilidad de la Masonería contemporánea.",
-      "Regularidad y reconocimiento masónico: principios, jurisdicción y fraternidad.",
+      "Tema por confirmar.",
+      "Tema por confirmar.",
+      "Tema por confirmar.",
     ],
     dress: [
       { label: "Conferencias · Semiformal", tone: "navy" },

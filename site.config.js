@@ -4,8 +4,9 @@
 
 export const site = {
   // Fecha y hora de INICIO del evento (cuenta regresiva)
-  fechaInicio: "2027-08-12T09:00:00-07:00",
-  fechasTexto: "12 – 15 de agosto de 2027",
+  // Fechas TENTATIVAS (aún no oficiales)
+  fechaInicio: "2027-08-11T09:00:00-07:00",
+  fechasTexto: "11 – 15 de agosto de 2027 (fechas tentativas)",
   sedeTexto: "Baja California, México",
 
   // Claim / frase principal (slogan por definir)

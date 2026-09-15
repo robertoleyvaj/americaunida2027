@@ -4,9 +4,14 @@ import PageHeader from "@/components/PageHeader";
 import { site } from "@/site.config";
 
 export const metadata = {
-  title: "Hotel Sede · América Unida Baja California 2027",
-  description: "Rosarito Beach Hotel, sede propuesta del encuentro: resort frente al mar en Rosarito, Baja California. Beneficios, tarifa de grupo y contacto para reservar.",
+  title: "Sede · América Unida Baja California 2027",
+  description: "La sede oficial del encuentro América Unida · Baja California 2027 se anunciará próximamente.",
 };
+
+// ⏸️ PAUSA PÚBLICA: la sede aún no es oficial. Mientras esto sea false,
+// la página muestra "Sede por confirmar". Cambia a true cuando el hotel
+// quede confirmado — todo el detalle de abajo ya está listo.
+const MOSTRAR_SEDE = false;
 
 const galeria = [
   { t: "Frente al mar", grad: "from-au-azul to-navy" },
@@ -27,6 +32,41 @@ const beneficios = [
 const mailReserva = `mailto:${site.email}?subject=${encodeURIComponent("Reserva hotel sede · América Unida 2027")}&body=${encodeURIComponent("Hola, quiero información para reservar en el hotel sede con la tarifa de grupo.\n\nNombre:\nFechas:\nNúmero de personas:\n")}`;
 
 export default function HotelPage() {
+  if (!MOSTRAR_SEDE) {
+    return (
+      <main>
+        <Navbar />
+        <PageHeader kicker="Sede" title="Sede por confirmar">
+          Estamos cerrando la sede oficial del encuentro en Baja California. Muy pronto
+          anunciaremos el hotel, la tarifa preferencial de grupo y cómo reservar.
+        </PageHeader>
+        <section className="bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-2xl px-5 md:px-8">
+            <div className="rounded-2xl border border-gray-100 bg-cloud p-10 md:p-14 text-center">
+              <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-gold-dark bg-gold/15 rounded-full px-4 py-1.5">
+                Información próximamente
+              </span>
+              <h2 className="mt-5 font-heading text-navy text-2xl md:text-3xl font-bold">
+                La experiencia también es la sede
+              </h2>
+              <p className="mt-4 text-[#4a4a4a] leading-relaxed">
+                El encuentro se vivirá en Baja California, entre mar, frontera y una de las
+                mejores mesas del continente. En cuanto quede confirmada la sede y la tarifa
+                de hospedaje, lo publicaremos aquí.
+              </p>
+              <a href={mailReserva}
+                 className="mt-7 inline-block rounded-full bg-gold px-8 py-3.5 text-navy font-semibold hover:bg-gold-dark hover:text-white transition-colors">
+                Quiero que me avisen
+              </a>
+              <p className="mt-3 text-[#999] text-sm">{site.email}</p>
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </main>
+    );
+  }
+
   return (
     <main>
       <Navbar />

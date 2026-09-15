@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+// ⏸️ PAUSA PÚBLICA: cuando el programa esté confirmado, cambia a true.
+const MOSTRAR_DETALLE = false;
+
 const dias = [
   { key: "jue", dia: "Jueves 12", color: "#3FA9F5", titulo: "Bienvenida", puntos: "Registro · Kit · Rompehielo" },
   { key: "vie", dia: "Viernes 13", color: "#2F9E6B", titulo: "Conferencias", puntos: "Inauguración · 3 conferencias · Gran Tenida Blanca" },
@@ -8,6 +11,31 @@ const dias = [
 ];
 
 export default function ProgramaTeaser() {
+  if (!MOSTRAR_DETALLE) {
+    return (
+      <section id="programa" className="bg-white py-20 md:py-28 scroll-mt-20">
+        <div className="mx-auto max-w-6xl px-5 md:px-8">
+          <div className="max-w-2xl">
+            <p className="kicker text-gold-dark">Qué vas a vivir</p>
+            <h2 className="mt-3 font-heading text-navy text-3xl md:text-5xl font-bold">Cuatro días de encuentro</h2>
+          </div>
+          <div className="mt-10 rounded-2xl border border-gray-100 bg-cloud p-10 md:p-14 text-center">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-gold-dark bg-gold/15 rounded-full px-4 py-1.5">
+              Programa por confirmar
+            </span>
+            <h3 className="mt-5 font-heading text-navy text-2xl md:text-3xl font-bold">
+              Estamos afinando el programa
+            </h3>
+            <p className="mt-4 text-[#4a4a4a] leading-relaxed max-w-xl mx-auto">
+              Cuatro días de conferencias, mesas de trabajo, convivencia y experiencia
+              Baja California. El programa completo se publicará muy pronto.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="programa" className="bg-white py-20 md:py-28 scroll-mt-20">
       <div className="mx-auto max-w-6xl px-5 md:px-8">

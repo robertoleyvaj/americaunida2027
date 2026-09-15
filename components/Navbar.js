@@ -52,7 +52,7 @@ export default function Navbar() {
           ))}
           <Link href="/inscripciones"
                 className="rounded-full bg-gold px-5 py-2 text-navy text-sm font-semibold hover:bg-gold-dark hover:text-white transition-colors">
-            Inscríbete
+            Registra tu interés
           </Link>
         </div>
 
@@ -78,7 +78,7 @@ export default function Navbar() {
           </div>
           <Link href="/inscripciones" onClick={() => setOpen(false)}
                 className="mt-auto rounded-full bg-gold px-5 py-3 text-navy text-center font-semibold">
-            Inscríbete
+            Registra tu interés
           </Link>
         </div>
       )}

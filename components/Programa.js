@@ -5,6 +5,11 @@ import Link from "next/link";
 import { precios } from "@/site.config";
 import { mxn } from "@/lib/pricing";
 
+// ⏸️ PAUSA PÚBLICA: mientras el programa no esté confirmado, se muestra
+// "por confirmar". Cambia a true cuando el programa sea oficial —
+// todo el detalle de abajo ya está listo y se mostrará automáticamente.
+const MOSTRAR_DETALLE = false;
+
 // Ícono discreto de vestimenta (percha)
 function HangerIcon({ className = "" }) {
   return (
@@ -130,6 +135,34 @@ export default function Programa({ initial, hideHeader }) {
   const valid = dias.some((d) => d.key === initial) ? initial : "jue";
   const [active, setActive] = useState(valid);
   const dSel = dias.find((d) => d.key === active);
+
+  if (!MOSTRAR_DETALLE) {
+    return (
+      <section id="programa" className={`bg-white scroll-mt-20 ${hideHeader ? "pt-10 pb-20 md:pt-12 md:pb-28" : "py-20 md:py-28"}`}>
+        <div className="mx-auto max-w-6xl px-5 md:px-8">
+          {!hideHeader && (
+            <div className="max-w-2xl">
+              <p className="kicker text-gold-dark">Qué vas a vivir</p>
+              <h2 className="mt-3 font-heading text-navy text-3xl md:text-5xl font-bold">Cuatro días de encuentro</h2>
+            </div>
+          )}
+          <div className={`${hideHeader ? "" : "mt-10"} rounded-2xl border border-gray-100 bg-cloud p-10 md:p-14 text-center`}>
+            <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-gold-dark bg-gold/15 rounded-full px-4 py-1.5">
+              Programa por confirmar
+            </span>
+            <h3 className="mt-5 font-heading text-navy text-2xl md:text-3xl font-bold">
+              Estamos afinando el programa
+            </h3>
+            <p className="mt-4 text-[#4a4a4a] leading-relaxed max-w-xl mx-auto">
+              El encuentro se vivirá a lo largo de cuatro días de conferencias, mesas de trabajo,
+              convivencia y experiencia Baja California. El programa completo, con horarios y sedes,
+              se publicará muy pronto.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="programa" className={`bg-white scroll-mt-20 ${hideHeader ? "pt-10 pb-20 md:pt-12 md:pb-28" : "py-20 md:py-28"}`}>

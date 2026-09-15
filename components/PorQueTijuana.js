@@ -1,8 +1,8 @@
 const cards = [
-  { t: "La frontera", s: "El Arco, la Zona Río y la frontera más viva de América.", grad: "from-au-azul/80 to-navy" },
-  { t: "Rosarito & Pacífico", s: "Resort frente al mar y atardeceres sobre el Pacífico.", grad: "from-au-azulclaro/80 to-navy" },
-  { t: "Valle de Guadalupe", s: "Vinícolas, gastronomía y experiencia enológica.", grad: "from-au-morado/70 to-navy" },
-  { t: "Cultura fronteriza", s: "Gente diversa, moderna y hospitalaria.", grad: "from-au-naranja/70 to-navy" },
+  { t: "La frontera", s: "El Arco, la Zona Río y la frontera más viva de América.", grad: "from-au-azul/80 to-navy", img: "/bc-frontera.jpg" },
+  { t: "Rosarito & Pacífico", s: "Resort frente al mar y atardeceres sobre el Pacífico.", grad: "from-au-azulclaro/80 to-navy", img: "/bc-rosarito.jpg" },
+  { t: "Valle de Guadalupe", s: "Vinícolas, gastronomía y experiencia enológica.", grad: "from-au-morado/70 to-navy", img: "/bc-valle.jpg" },
+  { t: "Cultura fronteriza", s: "Gente diversa, moderna y hospitalaria.", grad: "from-au-naranja/70 to-navy", img: "/bc-cultura.jpg" },
 ];
 
 export default function PorQueTijuana() {
@@ -26,11 +26,20 @@ export default function PorQueTijuana() {
               key={c.t}
               className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${c.grad} p-6 min-h-[190px] flex flex-col justify-end text-white group`}
             >
-              {/* Aquí puedes poner una foto de fondo más adelante */}
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+              {/* Foto de fondo (si aún no existe el archivo, se ve el degradado).
+                  Sube las imágenes a la carpeta public/ con estos nombres. */}
+              {c.img && (
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                  style={{ backgroundImage: `url(${c.img})` }}
+                  aria-hidden="true"
+                />
+              )}
+              {/* Degradado oscuro para que el texto siempre se lea sobre la foto */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="relative">
                 <h3 className="font-heading font-bold text-xl">{c.t}</h3>
-                <p className="mt-1 text-sm text-white/80">{c.s}</p>
+                <p className="mt-1 text-sm text-white/85">{c.s}</p>
               </div>
             </div>
           ))}

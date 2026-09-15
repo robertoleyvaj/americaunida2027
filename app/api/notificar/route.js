@@ -105,6 +105,29 @@ export async function POST(req) {
       return Response.json({ ok: true });
     }
 
+    if (tipo === "interes") {
+      const { nombre, email } = body;
+      // 1) Acuse al interesado
+      const htmlI = plantilla("¡Gracias por tu interés!", `
+        <p>Hola ${nombre || "hermano"}, registramos tu interés en <b>América Unida · Baja California 2027</b>. 🙌</p>
+        <p>Aún estamos afinando los últimos detalles del encuentro. En cuanto abramos las
+        inscripciones, serás de los primeros en enterarte — con la fecha, la sede y los
+        precios oficiales.</p>
+        <p>Nos vemos pronto en Baja California.</p>
+      `);
+      // 2) Aviso al equipo organizador
+      const htmlO = plantilla("Nuevo interesado", `
+        <p>Alguien dejó sus datos en <b>Registra tu interés</b>:</p>
+        <table style="font-size:14px;color:#333;margin:8px 0;">
+          <tr><td style="color:#777;padding:2px 12px 2px 0;">Nombre</td><td><b>${nombre || "—"}</b></td></tr>
+          <tr><td style="color:#777;padding:2px 12px 2px 0;">Correo</td><td>${email || "—"}</td></tr>
+        </table>
+      `);
+      await enviar({ to: email, subject: "Gracias por tu interés — América Unida · Baja California 2027", html: htmlI });
+      await enviar({ to: [N.tesorero, N.contadora], subject: `Nuevo interesado · ${nombre || ""}`, html: htmlO, replyTo: email });
+      return Response.json({ ok: true });
+    }
+
     return Response.json({ ok: false, error: "tipo no reconocido" }, { status: 400 });
   } catch (e) {
     return Response.json({ ok: false, error: String(e?.message || e) }, { status: 500 });

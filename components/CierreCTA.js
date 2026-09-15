@@ -10,16 +10,13 @@ export default function CierreCTA() {
           {site.claim}
         </h2>
         <p className="mt-5 text-white/70 text-lg">
-          Asegura tu lugar en el precio de preventa. Crea tu cuenta y elige cómo pagar.
+          Las inscripciones aún no abren. Déjanos tu correo y serás de los primeros en
+          enterarte cuando llegue el momento.
         </p>
         <div className="mt-9 flex flex-wrap justify-center gap-4">
           <Link href="/inscripciones"
                 className="rounded-full bg-gold px-8 py-3.5 text-navy font-semibold hover:bg-white transition-colors">
-            Inscríbete
-          </Link>
-          <Link href="/ingresar"
-                className="rounded-full border border-white/30 px-8 py-3.5 text-white font-semibold hover:bg-white/10 transition-colors">
-            Ya tengo cuenta
+            Registra tu interés
           </Link>
         </div>
         <p className="mt-6 text-white/40 text-sm">{site.fechasTexto} · {site.sedeTexto}</p>
